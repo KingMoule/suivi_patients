@@ -9,7 +9,7 @@ export function randomSalt() {
   return crypto.getRandomValues(new Uint8Array(16));
 }
 
-export async function deriveKey(passphrase, salt) {
+export async function deriveKey(passphrase, salt, extractable = false) {
   const material = await crypto.subtle.importKey(
     'raw', encoder.encode(passphrase), 'PBKDF2', false, ['deriveKey']
   );
@@ -17,7 +17,7 @@ export async function deriveKey(passphrase, salt) {
     { name: 'PBKDF2', salt, iterations: ITERATIONS, hash: 'SHA-256' },
     material,
     { name: 'AES-GCM', length: 256 },
-    false,
+    extractable,
     ['encrypt', 'decrypt']
   );
 }
@@ -35,4 +35,28 @@ export async function encrypt(key, value) {
 export async function decrypt(key, { iv, data }) {
   const plain = await crypto.subtle.decrypt({ name: 'AES-GCM', iv }, key, data);
   return JSON.parse(decoder.decode(plain));
+}
+
+// Face ID : la clé de données est enveloppée par une clé tirée du secret de la passkey (PRF).
+// Sans le secret, que seul l'iPad donne après Face ID, l'enveloppe est inutilisable.
+async function wrappingKey(secret) {
+  const material = await crypto.subtle.importKey('raw', secret, 'HKDF', false, ['deriveKey']);
+  return crypto.subtle.deriveKey(
+    { name: 'HKDF', hash: 'SHA-256', salt: new Uint8Array(32), info: encoder.encode('suivi_patients faceid') },
+    material,
+    { name: 'AES-GCM', length: 256 },
+    false,
+    ['encrypt', 'decrypt']
+  );
+}
+
+// La clé doit avoir été dérivée avec extractable = true.
+export async function wrapKey(secret, key) {
+  const raw = new Uint8Array(await crypto.subtle.exportKey('raw', key));
+  return encrypt(await wrappingKey(secret), Array.from(raw));
+}
+
+export async function unwrapKey(secret, wrapped) {
+  const raw = new Uint8Array(await decrypt(await wrappingKey(secret), wrapped));
+  return crypto.subtle.importKey('raw', raw, 'AES-GCM', false, ['encrypt', 'decrypt']);
 }

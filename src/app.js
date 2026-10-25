@@ -1,6 +1,7 @@
 import { describeStorage } from './storage-status.js';
 import { passphraseError } from './passphrase.js';
-import { hasVault, createVault, unlockVault } from './vault.js';
+import { hasVault, createVault, unlockVault, getFaceId } from './vault.js';
+import { faceIdSupported, enableFaceId, unlockWithFaceId } from './faceid.js';
 
 const LOCK_AFTER_MS = 5 * 60 * 1000; // verrouillage après 5 minutes sans toucher l'écran
 
@@ -33,10 +34,15 @@ function show(screen) {
   }
 }
 
+async function showUnlock() {
+  show('unlock');
+  document.getElementById('faceid-unlock').hidden = !(faceIdSupported() && (await getFaceId()));
+}
+
 function lock() {
   key = null;
   clearTimeout(lockTimer);
-  show('unlock');
+  showUnlock();
 }
 
 function resetLockTimer() {
@@ -45,10 +51,11 @@ function resetLockTimer() {
   lockTimer = setTimeout(lock, LOCK_AFTER_MS);
 }
 
-function open(newKey) {
+async function open(newKey) {
   key = newKey;
   show('main');
   resetLockTimer();
+  document.getElementById('faceid-setup').hidden = !faceIdSupported() || Boolean(await getFaceId());
 }
 
 // Lit les champs du formulaire, puis les vide pour ne pas garder la phrase de passe à l'écran.
@@ -81,9 +88,38 @@ async function handleUnlock(event) {
   if (newKey) open(newKey);
 }
 
+async function handleFaceIdSetup(event) {
+  event.preventDefault();
+  const form = event.target;
+  const error = form.querySelector('.error');
+  const { passphrase } = takeValues(form);
+  error.textContent = '';
+  // Clé exportable seulement le temps de l'envelopper ; la clé de la session reste inexportable.
+  const exportable = await unlockVault(passphrase, true);
+  if (!exportable) {
+    error.textContent = 'Phrase de passe incorrecte.';
+    return;
+  }
+  try {
+    const enabled = await enableFaceId(exportable);
+    if (enabled) form.hidden = true;
+    else error.textContent = "Cet iPad ne permet pas d'utiliser Face ID avec l'app.";
+  } catch {
+    error.textContent = 'Face ID annulé.';
+  }
+}
+
+async function handleFaceIdUnlock() {
+  const newKey = await unlockWithFaceId();
+  document.querySelector('#unlock .error').textContent = newKey ? '' : 'Face ID a échoué : utilisez la phrase de passe.';
+  if (newKey) open(newKey);
+}
+
 document.getElementById('setup').addEventListener('submit', handleSetup);
 document.getElementById('unlock').addEventListener('submit', handleUnlock);
 document.getElementById('lock').addEventListener('click', lock);
+document.getElementById('faceid-setup').addEventListener('submit', handleFaceIdSetup);
+document.getElementById('faceid-unlock').addEventListener('click', handleFaceIdUnlock);
 
 // Verrouiller dès que l'app passe en arrière-plan.
 document.addEventListener('visibilitychange', () => {
@@ -97,4 +133,5 @@ if ('serviceWorker' in navigator) {
 }
 
 checkStorage();
-show((await hasVault()) ? 'unlock' : 'setup');
+if (await hasVault()) await showUnlock();
+else show('setup');

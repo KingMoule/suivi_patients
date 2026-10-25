@@ -15,14 +15,24 @@ export async function createVault(passphrase) {
   return key;
 }
 
-// Retourne la clé, ou null si la phrase de passe est incorrecte.
-export async function unlockVault(passphrase) {
+// Retourne true si la clé ouvre le coffre.
+export async function keyOpensVault(key) {
   const meta = await db.get('meta');
-  const key = await deriveKey(passphrase, meta.salt);
   try {
     await decrypt(key, meta.check);
-    return key;
+    return true;
   } catch {
-    return null;
+    return false;
   }
 }
+
+// Retourne la clé, ou null si la phrase de passe est incorrecte.
+// extractable = true seulement pour activer Face ID, qui doit envelopper la clé.
+export async function unlockVault(passphrase, extractable = false) {
+  const meta = await db.get('meta');
+  const key = await deriveKey(passphrase, meta.salt, extractable);
+  return (await keyOpensVault(key)) ? key : null;
+}
+
+export const getFaceId = () => db.get('faceid');
+export const saveFaceId = (record) => db.set('faceid', record);

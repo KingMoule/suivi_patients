@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { deriveKey, encrypt, decrypt, randomSalt } from '../src/crypto.js';
+import { deriveKey, encrypt, decrypt, randomSalt, wrapKey, unwrapKey } from '../src/crypto.js';
 
 // Donnée manifestement fictive.
 const SAMPLE = { name: 'Test Fictif', room: '000' };
@@ -43,4 +43,20 @@ test('la clé ne peut pas être exportée', async () => {
   const key = await deriveKey('phrase de test fictive', randomSalt());
   assert.equal(key.extractable, false);
   await assert.rejects(crypto.subtle.exportKey('raw', key));
+});
+
+test('Face ID : la clé enveloppée se retrouve avec le même secret', async () => {
+  const salt = randomSalt();
+  const key = await deriveKey('phrase de test fictive', salt, true);
+  const secret = crypto.getRandomValues(new Uint8Array(32));
+  const restored = await unwrapKey(secret, await wrapKey(secret, key));
+  const sealed = await encrypt(key, SAMPLE);
+  assert.deepEqual(await decrypt(restored, sealed), SAMPLE);
+  assert.equal(restored.extractable, false);
+});
+
+test('Face ID : un autre secret ne déverrouille pas la clé', async () => {
+  const key = await deriveKey('phrase de test fictive', randomSalt(), true);
+  const wrapped = await wrapKey(crypto.getRandomValues(new Uint8Array(32)), key);
+  await assert.rejects(unwrapKey(crypto.getRandomValues(new Uint8Array(32)), wrapped));
 });
