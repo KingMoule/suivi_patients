@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   emptyData, addUnit, addResident, addFollowUp, deleteResident, ageOn, addDays,
-  attentionReasons, nextFollowUp, sortResidents,
+  attentionReasons, nextFollowUp, sortResidents, daysBetween, maskRamq, matchesSearch,
 } from '../src/model.js';
 
 // Données manifestement fictives.
@@ -102,4 +102,24 @@ test('supprime un résident sans toucher aux autres', () => {
   const second = addResident(data, 'u');
   deleteResident(data, first.id);
   assert.deepEqual(data.residents.map((r) => r.id), [second.id]);
+});
+
+test('compte les jours entre deux dates, dans les deux sens', () => {
+  assert.equal(daysBetween(TODAY, '2030-06-17'), 2);
+  assert.equal(daysBetween(TODAY, '2030-06-13'), -2);
+  assert.equal(daysBetween(TODAY, TODAY), 0);
+  assert.equal(daysBetween('2030-12-31', '2031-01-01'), 1);
+});
+
+test('masque le numéro RAMQ sauf les 4 derniers caractères', () => {
+  assert.equal(maskRamq('FICT 0000 0001'), '•••• 0001');
+  assert.equal(maskRamq(''), '');
+});
+
+test('cherche par chambre ou par nom, sans accents ni majuscules', () => {
+  const resident = fakeResident({ room: '201', fullName: 'Hélène Fictive' });
+  assert.equal(matchesSearch(resident, 'helene'), true);
+  assert.equal(matchesSearch(resident, '201'), true);
+  assert.equal(matchesSearch(resident, '  '), true);
+  assert.equal(matchesSearch(resident, 'Bidon'), false);
 });

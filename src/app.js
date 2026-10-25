@@ -57,7 +57,7 @@ async function open(newKey) {
   key = newKey;
   show('main');
   resetLockTimer();
-  await openDashboard(newKey);
+  await openDashboard(newKey, lock);
   document.getElementById('faceid-setup').hidden = !faceIdSupported() || Boolean(await getFaceId());
 }
 
@@ -120,7 +120,6 @@ async function handleFaceIdUnlock() {
 
 document.getElementById('setup').addEventListener('submit', handleSetup);
 document.getElementById('unlock').addEventListener('submit', handleUnlock);
-document.getElementById('lock').addEventListener('click', lock);
 document.getElementById('faceid-setup').addEventListener('submit', handleFaceIdSetup);
 document.getElementById('faceid-unlock').addEventListener('click', handleFaceIdUnlock);
 
