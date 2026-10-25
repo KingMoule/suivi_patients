@@ -1,0 +1,20 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <!-- Aucune connexion réseau permise depuis la page : les données ne peuvent pas sortir de l'iPad. -->
+  <meta http-equiv="Content-Security-Policy"
+        content="default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self'; manifest-src 'self'; worker-src 'self'; connect-src 'none'; base-uri 'none'; form-action 'none'">
+  <meta name="referrer" content="no-referrer">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <title>Suivi des résidents</title>
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="stylesheet" href="src/style.css">
+  <script type="module" src="src/app.js"></script>
+</head>
+<body>
+  <h1>Suivi des résidents</h1>
+  <p id="storage-status" class="status">Vérification du stockage…</p>
+</body>
+</html>
