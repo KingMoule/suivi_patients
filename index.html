@@ -16,5 +16,32 @@
 <body>
   <h1>Suivi des résidents</h1>
   <p id="storage-status" class="status">Vérification du stockage…</p>
+
+  <form id="setup" hidden>
+    <h2>Créer la phrase de passe</h2>
+    <p>Elle chiffre toutes les données. Si vous l'oubliez, les données seront perdues : personne ne pourra les récupérer.</p>
+    <label>Phrase de passe (12 caractères ou plus)
+      <input type="password" name="passphrase" autocomplete="off" required>
+    </label>
+    <label>Confirmer
+      <input type="password" name="confirmation" autocomplete="off" required>
+    </label>
+    <p class="error" role="alert"></p>
+    <button type="submit">Créer</button>
+  </form>
+
+  <form id="unlock" hidden>
+    <h2>App verrouillée</h2>
+    <label>Phrase de passe
+      <input type="password" name="passphrase" autocomplete="off" required>
+    </label>
+    <p class="error" role="alert"></p>
+    <button type="submit">Déverrouiller</button>
+  </form>
+
+  <section id="main" hidden>
+    <p>App déverrouillée.</p>
+    <button type="button" id="lock">Verrouiller</button>
+  </section>
 </body>
 </html>
