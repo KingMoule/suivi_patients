@@ -83,6 +83,14 @@ export function attentionReasons(resident, today) {
   return reasons;
 }
 
+// Message de rappel, ou null s'il n'y a rien à rappeler. lastBackup : « AAAA-MM-JJ » ou undefined.
+export function backupReminder(lastBackup, today, hasResidents) {
+  if (!hasResidents) return null;
+  if (!lastBackup) return "Aucune sauvegarde n'a été faite. Exportez-en une.";
+  if (addDays(lastBackup, 7) < today) return 'La dernière sauvegarde date de plus de 7 jours. Exportez-en une.';
+  return null;
+}
+
 // Le suivi non fait le plus proche ; les suivis sans date passent en dernier.
 export function nextFollowUp(resident) {
   const open = resident.followUps.filter((f) => !f.done && (f.text || f.dueDate));
