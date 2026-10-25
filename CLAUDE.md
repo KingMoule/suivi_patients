@@ -1,7 +1,9 @@
 # suivi_patients
 
 Outil de suivi de patients, projet du Cégep Gérald-Godin.
-Stack : à définir. Mettre ce fichier à jour dès le premier choix.
+Stack : PWA pour iPad en JavaScript natif (modules ES), sans dépendance ni
+build. Hébergée sur GitHub Pages (racine de `main`). Les données restent sur
+l'iPad, jamais sur un serveur.
 
 ## Données (non négociable)
 - Aucune donnée réelle de patient, nulle part : code, tests, captures,
@@ -11,7 +13,8 @@ Stack : à définir. Mettre ce fichier à jour dès le premier choix.
   identifiant (logs, erreurs, messages de commit).
 
 ## Vérifier
-- Tests : à compléter (le premier thread qui crée les tests inscrit la commande ici).
+- Tests : `npm test` (exécute `node --test`, Node 22+).
+- Essai local : `python3 -m http.server` à la racine, puis http://localhost:8000.
 - Lancer les tests avant de dire « terminé ». Montrer la sortie, pas une affirmation.
 
 ## Travailler

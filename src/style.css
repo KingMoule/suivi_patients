@@ -1,0 +1,20 @@
+body {
+  margin: 0;
+  padding: 2rem;
+  font-family: -apple-system, system-ui, sans-serif;
+  background: #f5f5f7;
+  color: #1d1d1f;
+}
+
+.status {
+  padding: 1rem;
+  border-radius: 0.5rem;
+}
+
+.status.ok {
+  background: #e3f5e1;
+}
+
+.status.warning {
+  background: #fdecc8;
+}
