@@ -161,3 +161,16 @@ button.danger {
   margin-left: 1rem;
   color: #b00020;
 }
+
+.backup {
+  margin-top: 1.5rem;
+}
+
+.backup summary {
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.backup form {
+  margin-top: 1rem;
+}

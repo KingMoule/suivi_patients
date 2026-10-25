@@ -8,6 +8,10 @@ export async function loadData(key) {
   return sealed ? decrypt(key, sealed) : emptyData();
 }
 
+// Date de la dernière sauvegarde : pas une donnée de santé, donc gardée sans chiffrement.
+export const getLastBackup = () => db.get('lastBackup');
+export const setLastBackup = (date) => db.set('lastBackup', date);
+
 // Les enregistrements se suivent l'un après l'autre, pour que le dernier état gagne.
 let queue = Promise.resolve();
 

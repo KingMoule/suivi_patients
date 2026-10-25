@@ -2,9 +2,11 @@
 // Tout le texte passe par textContent : une donnée de résident n'est jamais interprétée comme du HTML.
 import {
   todayString, ageOn, addUnit, addResident, addFollowUp, deleteResident,
-  attentionReasons, nextFollowUp, sortResidents,
+  attentionReasons, nextFollowUp, sortResidents, backupReminder,
 } from './model.js';
-import { loadData, saveData } from './store.js';
+import { loadData, saveData, getLastBackup, setLastBackup } from './store.js';
+import { createBackup, readBackup } from './backup.js';
+import { passphraseError } from './passphrase.js';
 
 const FIELDS = [
   ['room', 'Chambre', 'text'],
@@ -23,6 +25,7 @@ let residentId = null;
 let tableBox = null;
 let detailBox = null;
 let messageBox = null;
+let reminderBox = null;
 
 function el(tag, props = {}, ...children) {
   const node = document.createElement(tag);
@@ -42,9 +45,104 @@ async function persist() {
   try {
     await saveData(key, data);
     box.textContent = '';
+    updateReminder();
   } catch {
     box.textContent = 'Enregistrement impossible : les dernières modifications ne sont pas gardées.';
   }
+}
+
+async function updateReminder() {
+  const box = reminderBox;
+  const hasResidents = Boolean(data?.residents.length);
+  const message = backupReminder(await getLastBackup(), todayString(), hasResidents);
+  if (!box) return;
+  box.textContent = message ?? '';
+  box.hidden = !message;
+}
+
+function downloadFile(file) {
+  const link = el('a', { href: URL.createObjectURL(file), download: file.name });
+  document.body.append(link);
+  link.click();
+  link.remove();
+  setTimeout(() => URL.revokeObjectURL(link.href), 10000);
+}
+
+// Retourne true si le fichier a été enregistré. Sur l'iPad, la feuille de partage permet « Enregistrer dans Fichiers ».
+async function saveFile(text, message) {
+  const file = new File([text], `suivi-sauvegarde-${todayString()}.json`, { type: 'application/json' });
+  try {
+    if (navigator.canShare?.({ files: [file] })) await navigator.share({ files: [file] });
+    else downloadFile(file);
+  } catch (error) {
+    if (error.name !== 'AbortError') message.textContent = "Le fichier n'a pas pu être enregistré.";
+    return false;
+  }
+  await setLastBackup(todayString());
+  return true;
+}
+
+function backupSection() {
+  const exportMessage = el('p', { class: 'error', role: 'alert' });
+  const exportResult = el('div', {});
+  const restoreMessage = el('p', { class: 'error', role: 'alert' });
+
+  const exportForm = el('form', { onsubmit: async (e) => {
+    e.preventDefault();
+    const form = e.target;
+    const { passphrase, confirmation } = Object.fromEntries(new FormData(form));
+    form.reset();
+    exportResult.replaceChildren();
+    exportMessage.textContent = passphraseError(passphrase, confirmation) ?? '';
+    if (exportMessage.textContent) return;
+    const text = await createBackup(data, passphrase);
+    exportResult.replaceChildren(el('button', { type: 'button', onclick: async () => {
+      if (await saveFile(text, exportMessage)) {
+        exportResult.replaceChildren(el('p', {}, 'Sauvegarde enregistrée.'));
+        updateReminder();
+      }
+    } }, 'Enregistrer le fichier'));
+  } },
+  el('h4', {}, 'Exporter une sauvegarde'),
+  el('p', {}, "Le fichier est chiffré avec la phrase de passe ci-dessous, qui peut différer de celle de l'app. Gardez-la : sans elle, la sauvegarde est inutilisable."),
+  el('label', {}, 'Phrase de passe de la sauvegarde (12 caractères ou plus)',
+    el('input', { type: 'password', name: 'passphrase', autocomplete: 'off', required: true })),
+  el('label', {}, 'Confirmer',
+    el('input', { type: 'password', name: 'confirmation', autocomplete: 'off', required: true })),
+  exportMessage,
+  el('button', { type: 'submit' }, 'Préparer la sauvegarde'),
+  exportResult);
+
+  const restoreForm = el('form', { onsubmit: async (e) => {
+    e.preventDefault();
+    const form = e.target;
+    const file = form.elements.file.files[0];
+    const passphrase = form.elements.passphrase.value;
+    form.reset();
+    restoreMessage.textContent = '';
+    let restored;
+    try {
+      restored = await readBackup(await file.text(), passphrase);
+    } catch {
+      restoreMessage.textContent = 'Phrase de passe incorrecte ou fichier de sauvegarde invalide.';
+      return;
+    }
+    if (!key) return; // verrouillé pendant la lecture
+    if (!window.confirm('Remplacer toutes les données actuelles par celles de la sauvegarde ?')) return;
+    data = restored;
+    await persist();
+    selectSite(data.sites[0].id);
+  } },
+  el('h4', {}, 'Restaurer une sauvegarde'),
+  el('p', {}, 'Remplace toutes les données actuelles.'),
+  el('label', {}, 'Fichier de sauvegarde',
+    el('input', { type: 'file', name: 'file', accept: '.json,application/json', required: true })),
+  el('label', {}, 'Phrase de passe de la sauvegarde',
+    el('input', { type: 'password', name: 'passphrase', autocomplete: 'off', required: true })),
+  restoreMessage,
+  el('button', { type: 'submit' }, 'Restaurer'));
+
+  return el('details', { class: 'backup' }, el('summary', {}, 'Sauvegarde'), exportForm, restoreForm);
 }
 
 const unitsOf = (id) => data.units.filter((u) => u.siteId === id);
@@ -159,6 +257,7 @@ function renderAll() {
   tableBox = el('div', { class: 'table-box' });
   detailBox = el('div', {});
   messageBox = el('p', { class: 'error', role: 'alert' });
+  reminderBox = el('p', { class: 'status warning', hidden: true });
 
   const unitTabs = el('div', { class: 'tabs', role: 'tablist' },
     ...units.map((unit) => el('button', {
@@ -190,10 +289,12 @@ function renderAll() {
 
   root.replaceChildren(el('div', { class: 'layout' },
     el('section', { class: 'content' },
-      el('h2', {}, site.name), messageBox, unitTabs, addUnitForm, addResidentButton, tableBox, detailBox),
+      reminderBox, el('h2', {}, site.name), messageBox, unitTabs, addUnitForm, addResidentButton,
+      tableBox, detailBox, backupSection()),
     siteTabs));
   renderTable();
   renderDetail();
+  updateReminder();
 }
 
 export async function openDashboard(newKey) {
@@ -212,6 +313,6 @@ export function closeDashboard() {
   key = null;
   data = null;
   residentId = null;
-  tableBox = detailBox = messageBox = null;
+  tableBox = detailBox = messageBox = reminderBox = null;
   document.getElementById('dashboard').replaceChildren();
 }
