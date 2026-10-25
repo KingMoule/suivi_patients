@@ -14,6 +14,15 @@ export function addDays(dateString, days) {
   return todayString(new Date(y, m - 1, d + days));
 }
 
+// Nombre de jours de « from » à « to », négatif si « to » est avant.
+export function daysBetween(from, to) {
+  const utc = (dateString) => {
+    const [y, m, d] = dateString.split('-').map(Number);
+    return Date.UTC(y, m - 1, d);
+  };
+  return Math.round((utc(to) - utc(from)) / 86400000);
+}
+
 export function ageOn(birthDate, today) {
   if (!birthDate) return null;
   const [by, bm, bd] = birthDate.split('-').map(Number);
@@ -104,4 +113,18 @@ export function sortResidents(residents, today) {
   return [...residents].sort(
     (a, b) => rank(a) - rank(b) || a.room.localeCompare(b.room, 'fr', { numeric: true })
   );
+}
+
+// Seuls les 4 derniers caractères restent visibles, pour ne pas exposer le numéro complet à l'écran.
+export function maskRamq(ramq) {
+  const compact = ramq.replace(/\s/g, '');
+  return compact ? `•••• ${compact.slice(-4)}` : '';
+}
+
+// Recherche par chambre ou par nom, sans tenir compte des majuscules ni des accents.
+const fold = (text) => text.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLocaleLowerCase('fr');
+
+export function matchesSearch(resident, query) {
+  const wanted = fold(query.trim());
+  return !wanted || fold(`${resident.room} ${resident.fullName}`).includes(wanted);
 }
