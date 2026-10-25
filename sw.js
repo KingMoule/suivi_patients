@@ -1,6 +1,6 @@
 // Met en cache les fichiers de l'app pour qu'elle fonctionne hors ligne.
 // Changer CACHE à chaque modification de ces fichiers pour forcer la mise à jour.
-const CACHE = 'suivi-v2';
+const CACHE = 'suivi-v3';
 const FILES = [
   './',
   './index.html',
@@ -8,6 +8,7 @@ const FILES = [
   './src/app.js',
   './src/crypto.js',
   './src/db.js',
+  './src/faceid.js',
   './src/passphrase.js',
   './src/storage-status.js',
   './src/style.css',

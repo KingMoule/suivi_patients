@@ -37,11 +37,20 @@
     </label>
     <p class="error" role="alert"></p>
     <button type="submit">Déverrouiller</button>
+    <button type="button" id="faceid-unlock" hidden>Face ID</button>
   </form>
 
   <section id="main" hidden>
     <p>App déverrouillée.</p>
     <button type="button" id="lock">Verrouiller</button>
+    <form id="faceid-setup" hidden>
+      <h2>Face ID</h2>
+      <label>Confirmez avec la phrase de passe
+        <input type="password" name="passphrase" autocomplete="off" required>
+      </label>
+      <p class="error" role="alert"></p>
+      <button type="submit">Activer Face ID</button>
+    </form>
   </section>
 </body>
 </html>
