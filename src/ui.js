@@ -118,6 +118,8 @@ function downloadFile(file) {
 async function saveFile(text, message) {
   const file = new File([text], `suivi-sauvegarde-${todayString()}.json`, { type: 'application/json' });
   try {
+    // iOS ancre la feuille de partage en haut de la page : on y remonte pour qu'elle reste visible.
+    window.scrollTo({ top: 0 });
     if (navigator.canShare?.({ files: [file] })) await navigator.share({ files: [file] });
     else downloadFile(file);
   } catch (error) {
