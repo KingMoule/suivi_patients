@@ -27,7 +27,7 @@ export async function keyOpensVault(key) {
 }
 
 // Retourne la clé, ou null si la phrase de passe est incorrecte.
-// extractable = true seulement pour activer Face ID, qui doit envelopper la clé.
+// extractable = true seulement pour activer le déverrouillage biométrique, qui doit envelopper la clé.
 export async function unlockVault(passphrase, extractable = false) {
   const meta = await db.get('meta');
   const key = await deriveKey(passphrase, meta.salt, extractable);

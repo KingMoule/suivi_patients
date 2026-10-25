@@ -37,8 +37,8 @@ export async function decrypt(key, { iv, data }) {
   return JSON.parse(decoder.decode(plain));
 }
 
-// Face ID : la clé de données est enveloppée par une clé tirée du secret de la passkey (PRF).
-// Sans le secret, que seul l'iPad donne après Face ID, l'enveloppe est inutilisable.
+// Déverrouillage biométrique : la clé de données est enveloppée par une clé tirée du secret de la passkey (PRF).
+// Sans le secret, que seul l'iPad donne après la biométrie, l'enveloppe est inutilisable.
 async function wrappingKey(secret) {
   const material = await crypto.subtle.importKey('raw', secret, 'HKDF', false, ['deriveKey']);
   return crypto.subtle.deriveKey(

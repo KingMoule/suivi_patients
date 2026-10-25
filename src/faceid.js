@@ -1,4 +1,4 @@
-// Face ID par passkey (WebAuthn) avec l'extension PRF, qui donne un secret propre à l'iPad.
+// Déverrouillage biométrique (Touch ID ou Face ID) par passkey (WebAuthn) avec l'extension PRF, qui donne un secret propre à l'iPad.
 // Aucun serveur : le défi est local, seul le secret PRF compte.
 import { wrapKey, unwrapKey } from './crypto.js';
 import { keyOpensVault, getFaceId, saveFaceId } from './vault.js';
@@ -20,7 +20,7 @@ async function readSecret(credentialId, prfSalt) {
   return credential.getClientExtensionResults().prf?.results?.first ?? null;
 }
 
-// key doit être extractable. Retourne true si Face ID est activé.
+// key doit être extractable. Retourne true si le déverrouillage biométrique est activé.
 export async function enableFaceId(key) {
   const created = await navigator.credentials.create({
     publicKey: {
@@ -47,7 +47,7 @@ export async function enableFaceId(key) {
   return true;
 }
 
-// Retourne la clé, ou null si Face ID est annulé ou ne mène à rien.
+// Retourne la clé, ou null si le déverrouillage biométrique est annulé ou ne mène à rien.
 export async function unlockWithFaceId() {
   const record = await getFaceId();
   if (!record) return null;
