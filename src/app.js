@@ -1,6 +1,7 @@
 import { describeStorage } from './storage-status.js';
 import { passphraseError } from './passphrase.js';
 import { hasVault, createVault, unlockVault, getFaceId } from './vault.js';
+import { openDashboard, closeDashboard } from './ui.js';
 import { faceIdSupported, enableFaceId, unlockWithFaceId } from './faceid.js';
 
 const LOCK_AFTER_MS = 5 * 60 * 1000; // verrouillage après 5 minutes sans toucher l'écran
@@ -41,6 +42,7 @@ async function showUnlock() {
 
 function lock() {
   key = null;
+  closeDashboard();
   clearTimeout(lockTimer);
   showUnlock();
 }
@@ -55,6 +57,7 @@ async function open(newKey) {
   key = newKey;
   show('main');
   resetLockTimer();
+  await openDashboard(newKey);
   document.getElementById('faceid-setup').hidden = !faceIdSupported() || Boolean(await getFaceId());
 }
 
@@ -103,15 +106,15 @@ async function handleFaceIdSetup(event) {
   try {
     const enabled = await enableFaceId(exportable);
     if (enabled) form.hidden = true;
-    else error.textContent = "Cet iPad ne permet pas d'utiliser Face ID avec l'app.";
+    else error.textContent = "Cet iPad ne permet pas le déverrouillage biométrique avec l'app.";
   } catch {
-    error.textContent = 'Face ID annulé.';
+    error.textContent = 'Déverrouillage biométrique annulé.';
   }
 }
 
 async function handleFaceIdUnlock() {
   const newKey = await unlockWithFaceId();
-  document.querySelector('#unlock .error').textContent = newKey ? '' : 'Face ID a échoué : utilisez la phrase de passe.';
+  document.querySelector('#unlock .error').textContent = newKey ? '' : 'Le déverrouillage biométrique a échoué : utilisez la phrase de passe.';
   if (newKey) open(newKey);
 }
 
