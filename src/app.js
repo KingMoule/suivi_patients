@@ -27,6 +27,7 @@ async function checkStorage() {
   const element = document.getElementById('storage-status');
   element.textContent = status.message;
   element.className = status.ok ? 'status ok' : 'status warning';
+  element.hidden = status.ok; // rien à signaler quand le stockage est protégé
 }
 
 function show(screen) {
